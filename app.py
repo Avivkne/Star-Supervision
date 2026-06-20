@@ -61,11 +61,14 @@ structure_name = st.text_input("שם המבנה / הפרויקט", value="1538")
 visit_date = st.text_input("תאריך הסיור", value=datetime.now().strftime("%d/%m/%Y"))
 inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל...", value="האלמנט/אלמנטים נבדקים")
 
-st.header("👥 נוכחים בסיור")
+st.header("👥 נוכחים וחתימה")
 star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value='הח"מ')
 inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
 execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
 author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
+
+# שדה חדש להעלאת תמונת החתימה
+signature_file = st.file_uploader("✒️ העלה תמונת חתימה (אופציונלי):", type=["png", "jpg", "jpeg"])
 
 # חלק 3: מצב העבודה באתר
 st.header("🚧 מצב העבודה באתר")
@@ -170,6 +173,11 @@ if st.button("🚀 הפק קובץ Word"):
         # עיבוד מצב העבודה בשביל לשמור על תמיכה בירידות שורה ידניות (Enters)
         formatted_work_status = "\n".join([f"{rlm}{line}{rlm}" for line in work_status.split("\n")])
 
+        # עיבוד תמונת החתימה - אם קיימת, הופך אותה ל-InlineImage בגודל מותאם
+        final_signature_image = None
+        if signature_file is not None:
+            final_signature_image = InlineImage(doc, signature_file, width=Inches(1.5))
+
         # יצירת ה-context המאוחד ועטיפת הח"מ ומצב העבודה ב-RLM לבטיחות עיצובית
         context = {
             'report_date': report_date,
@@ -186,6 +194,7 @@ if st.button("🚀 הפק קובץ Word"):
             'execution_team': execution_team,
             'author_initials': author_initials,
             'work_status': formatted_work_status,
+            'signature_image': final_signature_image,  # הזרקת החתימה
             'specific_remarks_list': specific_remarks_list,
             'general_remarks_list': general_remarks_list,
             'cc_final_list': cc_final_list
