@@ -66,12 +66,13 @@ visit_date = st.text_input("תאריך הסיור", value=datetime.now().strftim
 inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל...", value="האלמנט/אלמנטים נבדקים")
 
 st.header("👥 נוכחים בסיור")
+star_present = st.text_input("נוכח מטעם סטאר מהנדסים (הח\"מ)", value="הח"מ")
 inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
 execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
 author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
 
 # חלק 4: הערות דינמיות וליקויים מהאתר (מתחיל מ-4.1)
-st.header("📸 הערות ספציפיות וליקויי סיור")
+st.header("📸 הערות וליקויים")
 st.write("כאן ניתן להוסיף הערות חופשיות ממוספרות (מ-4.1 ואילך) ולהעלות תמונה מתחת לכל אחת מהן:")
 
 # אתחול ה-session_state עבור רשימת ההערות הדינמיות אם לא קיים
@@ -103,7 +104,7 @@ if st.button("➕ הוסף הערה ותמונה נוספת"):
     st.rerun()
 
 # חלק 5: אזור הערות כלליות עם צ'קבוקסים (מתחיל מ-5.1)
-st.header("📝 הערות וממצאים כלליים")
+st.header("📝 הערות כלליות")
 st.write("בחר את המשפטים הרלוונטיים (הסעיפים ימוספרו אוטומטית החל מ-5.1):")
 
 note1 = st.checkbox("יש להסיר שאריות בטון ישן מתחתית ברזלי הזיון.")
@@ -129,6 +130,7 @@ if st.button("🚀 הפק קובץ Word"):
             'structure_name': structure_name,
             'visit_date': visit_date,
             'inspection_subject': inspection_subject,
+            'star_present': star_present,
             'inspector_name': inspector_name,
             'execution_team': execution_team,
             'author_initials': author_initials
@@ -144,16 +146,16 @@ if st.button("🚀 הפק קובץ Word"):
                     'image': None
                 }
                 
-                # אם יש תמונה, נמיר אותה לאובייקט InlineImage ונשמור אותה בתוך מבנה הנתונים
+                # אם יש תמונה, נמיר אותה לאובייקט InlineImage מוקטן ב-50% (רוחב 2 אינץ')
                 if item['image'] is not None:
-                    remark_data['image'] = InlineImage(doc, item['image'], width=Inches(4))
+                    remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
                 
                 specific_remarks_list.append(remark_data)
         
         # העברת הרשימה המובנית לוורד
         context['specific_remarks_list'] = specific_remarks_list
 
-        # 2. עיבוד חלק 5: בניית רשימת הערות כלליות (מ-5.1)
+        # 2. עיבוד חלק 5: בניית רשימת הערות כלליות (מ-5.1 וסידור המספור מימין לשמאל)
         general_remarks_list = []
         general_counter = 1
         
