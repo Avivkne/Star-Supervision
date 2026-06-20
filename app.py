@@ -62,7 +62,7 @@ visit_date = st.text_input("תאריך הסיור", value=datetime.now().strftim
 inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל...", value="האלמנט/אלמנטים נבדקים")
 
 st.header("👥 נוכחים בסיור")
-star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value="הח"מ")
+star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value='הח"מ')
 inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
 execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
 author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
