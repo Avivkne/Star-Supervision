@@ -1,7 +1,6 @@
 import streamlit as st
 from docxtpl import DocxTemplate
 from docx.shared import Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 from datetime import datetime
 
@@ -21,7 +20,7 @@ st.markdown("""
     /* עיצוב כפתור ההורדה שיישאר מיושר לימין */
     .stDownloadButton { text-align: right; }
     
-    /* עיצוב הקרדיט בתחתית שמאל */
+    /* עיצוב הקרדיט בתחתית שמאל - הגדלה לגודל 16 */
     .footer-credit {
         position: fixed;
         left: 20px;
@@ -29,8 +28,9 @@ st.markdown("""
         text-align: left;
         direction: ltr;
         color: #888888;
-        font-size: 12px;
+        font-size: 16px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -141,25 +141,6 @@ if st.button("🚀 הפק קובץ Word"):
         # רינדור הנתונים לתוך הוורד
         doc.render(context)
         
-        # לולאה שעוברת על כל הפסקאות והריצות במסמך ומעצבת אותן ל-David 13.5
-        for p in doc.paragraphs:
-            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT # יישור לימין של פסקאות שהוזרקו
-            for run in p.runs:
-                run.font.name = 'David'
-                run.font.size = Pt(13.5)
-                run.rtl = True # הגדרת כיווניות עברית לטקסט
-                
-        # מעבר גם על טבלאות (אם יש תגיות בתוך טבלה בתבנית שלך)
-        for table in doc.tables:
-            for row in table.rows:
-                for cell in row.cells:
-                    for p in cell.paragraphs:
-                        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-                        for run in p.runs:
-                            run.font.name = 'David'
-                            run.font.size = Pt(13.5)
-                            run.rtl = True
-        
         # שמירה לזיכרון כדי לאפשר הורדה בדפדפן
         bio = io.BytesIO()
         doc.save(bio)
@@ -179,5 +160,5 @@ if st.button("🚀 הפק קובץ Word"):
     except Exception as e:
         st.error(f"התרחשה שגיאה: {str(e)}")
 
-# הוספת חתימת הקרדיט בתחתית שמאל של עמוד האפליקציה
+# הוספת חתימת הקרדיט בתחתית שמאל של עמוד האפליקציה (גודל 16)
 st.markdown("<div class='footer-credit'>נבנה ע\"י אביב קנבל, סטאר מהנדסים</div>", unsafe_allow_html=True)
