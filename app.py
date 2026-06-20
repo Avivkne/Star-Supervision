@@ -16,11 +16,7 @@ st.markdown("""
     input { direction: RTL; text-align: right; }
     textarea { direction: RTL; text-align: right; }
     .stCheckbox { text-align: right; direction: RTL; }
-    
-    /* עיצוב כפתור ההורדה שיישאר מיושר לימין */
     .stDownloadButton { text-align: right; }
-    
-    /* עיצוב הקרדיט בתחתית שמאל - גודל 16 */
     .footer-credit {
         position: fixed;
         left: 20px;
@@ -67,56 +63,4 @@ inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל
 
 st.header("👥 נוכחים בסיור")
 star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value="אביב קנבל")
-inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
-execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
-author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
-
-# חלק 4: הערות דינמיות וליקויים מהאתר (מתחיל מ-4.1)
-st.header("📸 הערות ספציפיות וליקויי סיור")
-st.write("כאן ניתן להוסיף הערות חופשיות ממוספרות (מ-4.1 ואילך) ולהעלות תמונה מתחת לכל אחת מהן:")
-
-# אתחול ה-session_state עבור רשימת ההערות הדינמיות אם לא קיים
-if 'dynamic_remarks' not in st.session_state:
-    st.session_state.dynamic_remarks = [{'text': '', 'image': None}]
-
-# לולאה שמציגה את כל תיבות הטקסט והתמונות הקיימות בזיכרון
-for idx, item in enumerate(st.session_state.dynamic_remarks):
-    current_num = f"4.{idx + 1}"
-    st.write(f"**הערה {current_num}**")
-    
-    st.session_state.dynamic_remarks[idx]['text'] = st.text_area(
-        f"פירוט הליקוי עבור סעיף {current_num}:", 
-        value=item['text'], 
-        key=f"text_{idx}",
-        label_visibility="collapsed"
-    )
-    
-    st.session_state.dynamic_remarks[idx]['image'] = st.file_uploader(
-        f"העלה תמונה עבור סעיף {current_num}:", 
-        type=["png", "jpg", "jpeg"], 
-        key=f"image_{idx}"
-    )
-    st.write("---")
-
-# כפתור להוספת סעיף הערה ותמונה נוסף (אינסופי)
-if st.button("➕ הוסף הערה ותמונה נוספת"):
-    st.session_state.dynamic_remarks.append({'text': '', 'image': None})
-    st.rerun()
-
-# חלק 5: אזור הערות כלליות עם צ'קבוקסים (מתחיל מ-5.1)
-st.header("📝 הערות וממצאים כלליים")
-st.write("בחר את המשפטים הרלוונטיים (הסעיפים ימוספרו אוטומטית החל מ-5.1):")
-
-note1 = st.checkbox("יש להסיר שאריות בטון ישן מתחתית ברזלי הזיון.")
-note2 = st.checkbox("יש לדאוג טרם היציקה שמשטח היציקה נקי משאריות לכלוך ופסולת.")
-note3 = st.checkbox("יש לשמור על עובי כיסוי עפ\"י המצוין בתכניות.")
-note4 = st.checkbox("ניתן להמשיך בעבודות לאחר אישור סופי של המפקח. על המפקח לבדוק את הזיון ואת הרכיבים השונים באופן סופי לפני היציקה.")
-note5 = st.checkbox("במידה וישנן שאלות נוספות, ניתן לפנות אלינו בכל עת.")
-
-# חלק העתקים פתוח לעריכה
-st.header("📨 העתקים")
-default_cc_text = f"1. בוריס בקלמן – סטאר מהנדסים\n2. מנהל פרויקט\n3. תיק פרויקט-{project_num}\n4. תיק כללי"
-cc_list = st.text_area("רשימת תפוצה לעריכה במידת הצורך:", value=default_cc_text, height=120)
-
-# כפתור הפקה
-if st.button("🚀 הפק
+inspector_name = st.text
