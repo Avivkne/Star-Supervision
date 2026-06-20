@@ -62,7 +62,7 @@ visit_date = st.text_input("תאריך הסיור", value=datetime.now().strftim
 inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל...", value="האלמנט/אלמנטים נבדקים")
 
 st.header("👥 נוכחים בסיור")
-star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value="אביב קנבל")
+star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value="הח"מ")
 inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
 execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
 author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
@@ -125,30 +125,30 @@ if st.button("🚀 הפק קובץ Word"):
         # תו סמוי לכפיית כיווניות ימין לשמאל (RLM)
         rlm = "\u200f"
         
-        # בניית רשימת הערות כלליות (חלק 5) כטקסט נקי עם RLM
+        # בניית רשימת הערות כלליות (חלק 5) כטקסט נקי עם RLM בתחילה ובסוף למניעת קפיצת סימני פיסוק
         general_remarks_list = []
         general_counter = 1
         if note1: 
-            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt1}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}.{rlm} {txt1}{rlm}")
             general_counter += 1
         if note2: 
-            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt2}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}.{rlm} {txt2}{rlm}")
             general_counter += 1
         if note3: 
-            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt3}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}.{rlm} {txt3}{rlm}")
             general_counter += 1
         if note4: 
-            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt4}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}.{rlm} {txt4}{rlm}")
             general_counter += 1
         if note5: 
-            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt5}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}.{rlm} {txt5}{rlm}")
             general_counter += 1
 
-        # בניית רשימת העתקים כטקסט נקי עם RLM בתחילת כל שורה
+        # בניית רשימת העתקים כטקסט נקי עם RLM בתחילת ובסוף כל שורה
         cc_final_list = []
         for line in cc_list.split('\n'):
             if line.strip():
-                cc_final_list.append(f"{rlm}{line.strip()}")
+                cc_final_list.append(f"{rlm}{line.strip()}{rlm}")
 
         # עיבוד חלק 4
         specific_remarks_list = []
@@ -156,14 +156,14 @@ if st.button("🚀 הפק קובץ Word"):
             current_num = f"4.{idx + 1}"
             if item['text'].strip():
                 remark_data = {
-                    'text': f"{rlm}{current_num}. {item['text'].strip()}",
+                    'text': f"{rlm}{current_num}.{rlm} {item['text'].strip()}{rlm}",
                     'image': None
                 }
                 if item['image'] is not None:
                     remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
                 specific_remarks_list.append(remark_data)
 
-        # יצירת ה-context המאוחד
+        # יצירת ה-context המאוחד ועטיפת הח"מ ב-RLM לבטיחות
         context = {
             'report_date': report_date,
             'project_num': project_num,
@@ -174,7 +174,7 @@ if st.button("🚀 הפק קובץ Word"):
             'structure_name': structure_name,
             'visit_date': visit_date,
             'inspection_subject': inspection_subject,
-            'star_present': star_present,
+            'star_present': f"{rlm}{star_present}{rlm}",
             'inspector_name': inspector_name,
             'execution_team': execution_team,
             'author_initials': author_initials,
