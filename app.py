@@ -116,10 +116,10 @@ note3 = st.checkbox(txt3)
 note4 = st.checkbox(txt4)
 note5 = st.checkbox(txt5)
 
-# חלק העתקים פתוח לעריכה
+# חלק העתקים פתוח לעריכה - עם השורה החדשה של ראש הצוות
 st.header("📨 העתקים")
-default_cc_text = f"1. בוריס בקלמן/ישראל קנר – סטאר מהנדסים\n2. מנהל פרויקט\n3. תיק פרויקט\n4. תיק כללי"
-cc_list = st.text_area("רשימת תפוצה לעריכה:", value=default_cc_text, height=120)
+default_cc_text = f"1. בוריס בקלמן/ישראל קנר – סטאר מהנדסים\n2. ראש צוות - סטאר מהנדסים\n3. מנהל פרויקט\n4. תיק פרויקט\n5. תיק כללי"
+cc_list = st.text_area("רשימת תפוצה לעריכה:", value=default_cc_text, height=140)
 
 # כפתור הפקה - ממוקם בסוף הקובץ עם הזחה נכונה
 if st.button("🚀 הפק קובץ Word"):
