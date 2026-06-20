@@ -63,4 +63,136 @@ inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל
 
 st.header("👥 נוכחים בסיור")
 star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value="אביב קנבל")
-inspector_name = st.text
+inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
+execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
+author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
+
+# חלק 4: הערות דינמיות וליקויים מהאתר
+st.header("📸 הערות ספציפיות וליקויי סיור")
+st.write("כאן ניתן להוסיף הערות חופשיות ממוספרות (מ-4.1 ואילך) ותמונה:")
+
+if 'dynamic_remarks' not in st.session_state:
+    st.session_state.dynamic_remarks = [{'text': '', 'image': None}]
+
+for idx, item in enumerate(st.session_state.dynamic_remarks):
+    current_num = f"4.{idx + 1}"
+    st.write(f"**הערה {current_num}**")
+    
+    st.session_state.dynamic_remarks[idx]['text'] = st.text_area(
+        f"פירוט הליקוי עבור סעיף {current_num}:", 
+        value=item['text'], 
+        key=f"text_{idx}",
+        label_visibility="collapsed"
+    )
+    
+    st.session_state.dynamic_remarks[idx]['image'] = st.file_uploader(
+        f"העלה תמונה עבור סעיף {current_num}:", 
+        type=["png", "jpg", "jpeg"], 
+        key=f"image_{idx}"
+    )
+    st.write("---")
+
+if st.button("➕ הוסף הערה ותמונה נוספת"):
+    st.session_state.dynamic_remarks.append({'text': '', 'image': None})
+    st.rerun()
+
+# חלק 5: אזור הערות כלליות עם צ'קבוקסים
+st.header("📝 הערות וממצאים כלליים")
+st.write("בחר את המשפטים הרלוונטיים (הסעיפים ימוספרו אוטומטית החל מ-5.1):")
+
+txt1 = "יש להסיר שאריות בטון ישן מתחתית ברזלי הזיון."
+txt2 = "יש לדאוג טרם היציקה שמשטח היציקה נקי משאריות לכלוך ופסולת."
+txt3 = "יש לשמור על עובי כיסוי עפ\"י המצוין בתכניות."
+txt4 = "ניתן להמשיך בעבודות לאחר אישור סופי של המפקח. על המפקח לבדוק את הזיון ואת הרכיבים השונים באופן סופי לפני היציקה."
+txt5 = "במידה וישנן שאלות נוספות, ניתן לפנות אלינו בכל עת."
+
+note1 = st.checkbox(txt1)
+note2 = st.checkbox(txt2)
+note3 = st.checkbox(txt3)
+note4 = st.checkbox(txt4)
+note5 = st.checkbox(txt5)
+
+# חלק העתקים פתוח לעריכה
+st.header("📨 העתקים")
+default_cc_text = f"1. בוריס בקלמן – סטאר מהנדסים\n2. מנהל פרויקט\n3. תיק פרויקט-{project_num}\n4. תיק כללי"
+cc_list = st.text_area("רשימת תפוצה לעריכה:", value=default_cc_text, height=120)
+
+# כפתור הפקה
+if st.button("🚀 הפק קובץ Word"):
+    try:
+        doc = DocxTemplate("template.docx")
+        
+        context = {
+            'report_date': report_date,
+            'project_num': project_num,
+            'letter_num': letter_num,
+            'client_name': client_name,
+            'contact_person': contact_person,
+            'client_email': client_email,
+            'structure_name': structure_name,
+            'visit_date': visit_date,
+            'inspection_subject': inspection_subject,
+            'star_present': star_present,
+            'inspector_name': inspector_name,
+            'execution_team': execution_team,
+            'author_initials': author_initials,
+            'cc_list': cc_list
+        }
+
+        # עיבוד חלק 4
+        specific_remarks_list = []
+        for idx, item in enumerate(st.session_state.dynamic_remarks):
+            current_num = f"4.{idx + 1}"
+            if item['text'].strip():
+                remark_data = {
+                    'text': f"{current_num}. {item['text'].strip()}",
+                    'image': None
+                }
+                if item['image'] is not None:
+                    remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
+                specific_remarks_list.append(remark_data)
+        
+        context['specific_remarks_list'] = specific_remarks_list
+
+        # עיבוד חלק 5
+        general_remarks_list = []
+        general_counter = 1
+        
+        if note1: 
+            general_remarks_list.append(f"5.{general_counter}. {txt1}")
+            general_counter += 1
+        if note2: 
+            general_remarks_list.append(f"5.{general_counter}. {txt2}")
+            general_counter += 1
+        if note3: 
+            general_remarks_list.append(f"5.{general_counter}. {txt3}")
+            general_counter += 1
+        if note4: 
+            general_remarks_list.append(f"5.{general_counter}. {txt4}")
+            general_counter += 1
+        if note5: 
+            general_remarks_list.append(f"5.{general_counter}. {txt5}")
+            general_counter += 1
+            
+        context['general_remarks'] = "\n".join(general_remarks_list)
+
+        doc.render(context)
+        
+        bio = io.BytesIO()
+        doc.save(bio)
+        bio.seek(0)
+        
+        st.success("🎉 הדוח הופק בהצלחה!")
+        st.download_button(
+            label="💾 הורד קובץ Word מוכן",
+            data=bio,
+            file_name=f"{project_num}-{letter_num}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    except FileNotFoundError:
+        st.error("שגיאה: קובץ התבנית 'template.docx' לא נמצא באותה תיקייה.")
+    except Exception as e:
+        st.error(f"התרחשה שגיאה: {str(e)}")
+
+# חתימת קרדיט
+st.markdown("<div class='footer-credit'>נבנה ע\"י אביב קנבל, סטאר מהנדסים</div>", unsafe_allow_html=True)
