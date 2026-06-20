@@ -1,5 +1,5 @@
 import streamlit as st
-from docxtpl import DocxTemplate, RichText
+from docxtpl import DocxTemplate
 from docx.shared import Pt
 import io
 from datetime import datetime
@@ -7,7 +7,7 @@ from datetime import datetime
 # הגדרת כיוון כתיבה מימין לשמאל עבור הממשק
 st.set_page_config(layout="centered", page_title="מחולל דוחות פיקוח עליון")
 
-# עיצוב בסיסי בעברית ותיקון כיווניות (RTL) + מרכזי לוגו
+# עיצוב בסיסי בעברית ותיקון כיווניות (RTL) + עיצוב הקרדיט בתחתית
 st.markdown("""
     <style>
     body { direction: RTL; text-align: right; }
@@ -17,25 +17,28 @@ st.markdown("""
     textarea { direction: RTL; text-align: right; }
     .stCheckbox { text-align: right; direction: RTL; }
     
-    /* מירכוז מוחלט של אלמנטים בקונטיינר של הלוגו */
-    .centered-logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%;
-        text-align: center;
+    /* עיצוב כפתור ההורדה שיישאר מיושר לימין */
+    .stDownloadButton { text-align: right; }
+    
+    /* עיצוב הקרדיט בתחתית שמאל */
+    .footer-credit {
+        position: fixed;
+        left: 20px;
+        bottom: 20px;
+        text-align: left;
+        direction: ltr;
+        color: #888888;
+        font-size: 12px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 1. הצגת הלוגו מוגדל (רוחב 350) וממורכז לחלוטין באמצע הדף
+# 1. הצגת הלוגו מוקטן (70% מהקודם - רוחב 245) וממורכז באמצע הדף
 try:
-    # יצירת מירכוז בעזרת עמודות - עמודה אמצעית רחבה
-    col_space1, col_logo, col_space2 = st.columns([1, 3, 1])
+    col_space1, col_logo, col_space2 = st.columns([1.2, 2.6, 1.2])
     with col_logo:
-        st.image("logo.png", use_container_width=True)
+        st.image("logo.png", width=245)
 except:
     pass  # אם הלוגו לא נמצא, האפליקציה תמשיך לרוץ כרגיל
 
@@ -87,7 +90,16 @@ if st.button("🚀 הפק דוח Word"):
         # טעינת התבנית
         doc = DocxTemplate("template.docx")
         
-        # 2. מנגנון יצירת סעיפים ממוספרים רצים (רק עבור מה שסומן ב-V)
+        # הגדרת גופן ברירת מחדל למסמך (David, גודל 13.5) בצורה גלובלית כדי למנוע את קריסת הטקסט
+        try:
+            style = doc.styles['Normal']
+            font = style.font
+            font.name = 'David'
+            font.size = Pt(13.5)
+        except:
+            pass # למקרה של סגנון מסמך שונה, שלא יפריע להרצה
+
+        # מנגנון יצירת סעיפים ממוספרים רצים (רק עבור מה שסומן ב-V)
         final_remarks_list = []
         item_counter = 1
         
@@ -117,27 +129,21 @@ if st.button("🚀 הפק דוח Word"):
         # חיבור כל ההערות יחד עם ירידת שורה של וורד
         remarks_formatted = "\n".join(final_remarks_list)
         
-        # פונקציית עזר להמרת טקסט רגיל לטקסט מעוצב בגופן David ובגודל 13.5
-        def format_david(text_val):
-            rt = RichText()
-            rt.add(text_val, font='David', size=Pt(13.5))
-            return rt
-
-        # סנכרון המשתנים עם קובץ הוורד והחלת העיצוב המבוקש
+        # סנכרון המשתנים היציב עם קובץ הוורד
         context = {
-            'report_date': format_david(report_date),
-            'project_num': format_david(project_num),
-            'letter_num': format_david(letter_num),
-            'client_name': format_david(client_name),
-            'contact_person': format_david(contact_person),
-            'client_email': format_david(client_email),
-            'structure_name': format_david(structure_name),
-            'visit_date': format_david(visit_date),
-            'inspection_subject': format_david(inspection_subject),
-            'inspector_name': format_david(inspector_name),
-            'execution_team': format_david(execution_team),
-            'author_initials': format_david(author_initials),
-            'remarks': format_david(remarks_formatted)
+            'report_date': report_date,
+            'project_num': project_num,
+            'letter_num': letter_num,
+            'client_name': client_name,
+            'contact_person': contact_person,
+            'client_email': client_email,
+            'structure_name': structure_name,
+            'visit_date': visit_date,
+            'inspection_subject': inspection_subject,
+            'inspector_name': inspector_name,
+            'execution_team': execution_team,
+            'author_initials': author_initials,
+            'remarks': remarks_formatted
         }
         
         # רינדור הנתונים לתוך הוורד
@@ -150,7 +156,7 @@ if st.button("🚀 הפק דוח Word"):
         
         st.success("🎉 הדוח הופק בהצלחה! לחץ על הכפתור למטה כדי להוריד אותו:")
         
-        # שם הקובץ שונה לפורמט הדינמי המבוקש: {project_num}-{letter_num}.docx
+        # שם הקובץ בפורמט הדינמי המבוקש: {project_num}-{letter_num}.docx
         st.download_button(
             label="💾 הורד קובץ Word מוכן",
             data=bio,
@@ -161,3 +167,6 @@ if st.button("🚀 הפק דוח Word"):
         st.error("שגיאה: קובץ התבנית 'template.docx' לא נמצא באותה תיקייה של הקוד.")
     except Exception as e:
         st.error(f"התרחשה שגיאה: {str(e)}")
+
+# הוספת חתימת הקרדיט בתחתית שמאל של עמוד האפליקציה
+st.markdown("<div class='footer-credit'>נבנה ע\"י אביב קנבל, סטאר מהנדסים</div>", unsafe_allow_html=True)
