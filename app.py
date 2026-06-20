@@ -31,7 +31,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# הצגת הלוגו מוקטן וממורכז באמצע הדף
+# הצגת הלוגו مוקטן וממורכז באמצע הדף
 try:
     col_space1, col_logo, col_space2 = st.columns([1.2, 2.6, 1.2])
     with col_logo:
@@ -135,11 +135,10 @@ if st.button("🚀 הפק קובץ Word"):
             'star_present': star_present,
             'inspector_name': inspector_name,
             'execution_team': execution_team,
-            'author_initials': author_initials,
-            'cc_list': cc_list
+            'author_initials': author_initials
         }
 
-        # עיבוד חלק 4
+        # עיבוד חלק 4 (לולאה)
         specific_remarks_list = []
         for idx, item in enumerate(st.session_state.dynamic_remarks):
             current_num = f"4.{idx + 1}"
@@ -151,10 +150,9 @@ if st.button("🚀 הפק קובץ Word"):
                 if item['image'] is not None:
                     remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
                 specific_remarks_list.append(remark_data)
-        
         context['specific_remarks_list'] = specific_remarks_list
 
-        # עיבוד חלק 5
+        # עיבוד חלק 5 (הפיכה ללולאה נפרדת)
         general_remarks_list = []
         general_counter = 1
         
@@ -173,8 +171,11 @@ if st.button("🚀 הפק קובץ Word"):
         if note5: 
             general_remarks_list.append(f"5.{general_counter}. {txt5}")
             general_counter += 1
-            
-        context['general_remarks'] = "\n".join(general_remarks_list)
+        context['general_remarks_list'] = general_remarks_list
+
+        # עיבוד חלק העתקים (פירוק מערך טקסט ללולאת שורות נפרדות)
+        cc_final_list = [line.strip() for line in cc_list.split('\n') if line.strip()]
+        context['cc_final_list'] = cc_final_list
 
         doc.render(context)
         
