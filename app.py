@@ -122,27 +122,33 @@ if st.button("🚀 הפק קובץ Word"):
     try:
         doc = DocxTemplate("template.docx")
         
-        # בניית רשימת הערות כלליות (חלק 5) כטקסט נקי
+        # תו סמוי לכפיית כיווניות ימין לשמאל (RLM)
+        rlm = "\u200f"
+        
+        # בניית רשימת הערות כלליות (חלק 5) כטקסט נקי עם RLM
         general_remarks_list = []
         general_counter = 1
         if note1: 
-            general_remarks_list.append(f"5.{general_counter}. {txt1}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt1}")
             general_counter += 1
         if note2: 
-            general_remarks_list.append(f"5.{general_counter}. {txt2}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt2}")
             general_counter += 1
         if note3: 
-            general_remarks_list.append(f"5.{general_counter}. {txt3}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt3}")
             general_counter += 1
         if note4: 
-            general_remarks_list.append(f"5.{general_counter}. {txt4}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt4}")
             general_counter += 1
         if note5: 
-            general_remarks_list.append(f"5.{general_counter}. {txt5}")
+            general_remarks_list.append(f"{rlm}5.{general_counter}. {txt5}")
             general_counter += 1
 
-        # בניית רשימת העתקים כטקסט נקי
-        cc_final_list = [line.strip() for line in cc_list.split('\n') if line.strip()]
+        # בניית רשימת העתקים כטקסט נקי עם RLM בתחילת כל שורה
+        cc_final_list = []
+        for line in cc_list.split('\n'):
+            if line.strip():
+                cc_final_list.append(f"{rlm}{line.strip()}")
 
         # עיבוד חלק 4
         specific_remarks_list = []
@@ -150,7 +156,7 @@ if st.button("🚀 הפק קובץ Word"):
             current_num = f"4.{idx + 1}"
             if item['text'].strip():
                 remark_data = {
-                    'text': f"{current_num}. {item['text'].strip()}",
+                    'text': f"{rlm}{current_num}. {item['text'].strip()}",
                     'image': None
                 }
                 if item['image'] is not None:
@@ -188,12 +194,4 @@ if st.button("🚀 הפק קובץ Word"):
             label="💾 הורד קובץ Word מוכן",
             data=bio,
             file_name=f"{project_num}-{letter_num}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    except FileNotFoundError:
-        st.error("שגיאה: קובץ התבנית 'template.docx' לא נמצא באותה תיקייה.")
-    except Exception as e:
-        st.error(f"התרחשה שגיאה: {str(e)}")
-
-# חתימת קרדיט
-st.markdown("<div class='footer-credit'>נבנה ע\"י אביב קנבל, סטאר מהנדסים</div>", unsafe_allow_html=True)
+            mime="application/vnd.openxmlformats-officedocument.
