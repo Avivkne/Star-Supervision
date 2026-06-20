@@ -189,9 +189,16 @@ if st.button("🚀 הפק קובץ Word"):
         doc.save(bio)
         bio.seek(0)
         
+        # קיצור סוג ה-MIME למניעת חיתוך שורות ארוכות
+        ms_word_mime = "application/octet-stream"
+        
         st.success("🎉 הדוח הופק בהצלחה!")
         st.download_button(
             label="💾 הורד קובץ Word מוכן",
             data=bio,
             file_name=f"{project_num}-{letter_num}.docx",
-            mime="application/vnd.openxmlformats-officedocument.
+            mime=ms_word_mime
+        )
+    except FileNotFoundError:
+        st.error("שגיאה: קובץ התבנית 'template.docx' לא נמצא באותה תיקייה.")
+    except Exception
