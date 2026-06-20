@@ -61,20 +61,21 @@ structure_name = st.text_input("שם המבנה / הפרויקט", value="1538")
 visit_date = st.text_input("תאריך הסיור", value=datetime.now().strftime("%d/%m/%Y"))
 inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל...", value="האלמנט/אלמנטים נבדקים")
 
-st.header("👥 נוכחים וחתימה")
+st.header("👥 נוכחים בסיור")
 star_present = st.text_input("נוכח מטעם סטאר מהנדסים", value='הח"מ')
 inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
 execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
 author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
 
-# שדה חדש להעלאת תמונת החתימה
-signature_file = st.file_uploader("✒️ העלה תמונת חתימה (אופציונלי):", type=["png", "jpg", "jpeg"])
-
 # חלק 3: מצב העבודה באתר
 st.header("🚧 מצב העבודה באתר")
 work_status = st.text_area("תיאור מצב העבודה הנוכחי באתר:", value="רוב הברזל מורכב במלואו")
 
-# חלק 4: הערות דינמיות וליקויים מהאתר
+# חלק 4: חתימה
+st.header("✒️ חתימת המפקח")
+signature_file = st.file_uploader("העלה תמונת חתימה:", type=["png", "jpg", "jpeg"])
+
+# חלק 5: הערות דינמיות וליקויים מהאתר
 st.header("📸 הערות ספציפיות וליקויי סיור")
 st.write("כאן ניתן להוסיף הערות חופשיות ממוספרות (מ-4.1 ואילך) ותמונה:")
 
@@ -103,7 +104,7 @@ if st.button("➕ הוסף הערה ותמונה נוספת"):
     st.session_state.dynamic_remarks.append({'text': '', 'image': None})
     st.rerun()
 
-# חלק 5: אזור הערות כלליות עם צ'קבוקסים
+# חלק 6: אזור הערות כלליות עם צ'קבוקסים
 st.header("📝 הערות וממצאים כלליים")
 st.write("בחר את המשפטים הרלוונטיים (הסעיפים ימוספרו אוטומטית החל מ-5.1):")
 
@@ -119,20 +120,18 @@ note3 = st.checkbox(txt3)
 note4 = st.checkbox(txt4)
 note5 = st.checkbox(txt5)
 
-# חלק העתקים פתוח לעריכה - עם השורה החדשה של ראש הצוות
+# חלק העתקים פתוח לעריכה
 st.header("📨 העתקים")
 default_cc_text = f"1. בוריס בקלמן/ישראל קנר – סטאר מהנדסים\n2. ראש צוות - סטאר מהנדסים\n3. מנהל פרויקט\n4. תיק פרויקט\n5. תיק כללי"
 cc_list = st.text_area("רשימת תפוצה לעריכה:", value=default_cc_text, height=140)
 
-# כפתור הפקה - ממוקם בסוף הקובץ עם הזחה נכונה
+# כפתור הפקה
 if st.button("🚀 הפק קובץ Word"):
     try:
         doc = DocxTemplate("template.docx")
-        
-        # תו סמוי לכפיית כיווניות ימין לשמאל (RLM)
         rlm = "\u200f"
         
-        # בניית רשימת הערות כלליות (חלק 5) כטקסט נקי עם RLM בתחילה ובסוף למניעת קפיצת סימני פיסוק
+        # בניית רשימת הערות כלליות (חלק 6)
         general_remarks_list = []
         general_counter = 1
         if note1: 
@@ -151,34 +150,21 @@ if st.button("🚀 הפק קובץ Word"):
             general_remarks_list.append(f"{rlm}5.{general_counter}.{rlm} {txt5}{rlm}")
             general_counter += 1
 
-        # בניית רשימת העתקים כטקסט נקי עם RLM בתחילת ובסוף כל שורה
-        cc_final_list = []
-        for line in cc_list.split('\n'):
-            if line.strip():
-                cc_final_list.append(f"{rlm}{line.strip()}{rlm}")
+        cc_final_list = [f"{rlm}{line.strip()}{rlm}" for line in cc_list.split('\n') if line.strip()]
 
-        # עיבוד חלק 4
         specific_remarks_list = []
         for idx, item in enumerate(st.session_state.dynamic_remarks):
             current_num = f"4.{idx + 1}"
             if item['text'].strip():
                 remark_data = {
                     'text': f"{rlm}{current_num}.{rlm} {item['text'].strip()}{rlm}",
-                    'image': None
+                    'image': InlineImage(doc, item['image'], width=Inches(2)) if item['image'] else None
                 }
-                if item['image'] is not None:
-                    remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
                 specific_remarks_list.append(remark_data)
 
-        # עיבוד מצב העבודה בשביל לשמור על תמיכה בירידות שורה ידניות (Enters)
         formatted_work_status = "\n".join([f"{rlm}{line}{rlm}" for line in work_status.split("\n")])
+        final_signature_image = InlineImage(doc, signature_file, width=Inches(1.5)) if signature_file else None
 
-        # עיבוד תמונת החתימה - אם קיימת, הופך אותה ל-InlineImage בגודל מותאם
-        final_signature_image = None
-        if signature_file is not None:
-            final_signature_image = InlineImage(doc, signature_file, width=Inches(1.5))
-
-        # יצירת ה-context המאוחד ועטיפת הח"מ ומצב העבודה ב-RLM לבטיחות עיצובית
         context = {
             'report_date': report_date,
             'project_num': project_num,
@@ -194,31 +180,20 @@ if st.button("🚀 הפק קובץ Word"):
             'execution_team': execution_team,
             'author_initials': author_initials,
             'work_status': formatted_work_status,
-            'signature_image': final_signature_image,  # הזרקת החתימה
+            'signature_image': final_signature_image,
             'specific_remarks_list': specific_remarks_list,
             'general_remarks_list': general_remarks_list,
             'cc_final_list': cc_final_list
         }
 
         doc.render(context)
-        
         bio = io.BytesIO()
         doc.save(bio)
         bio.seek(0)
         
-        ms_word_mime = "application/octet-stream"
-        
         st.success("🎉 הדוח הופק בהצלחה!")
-        st.download_button(
-            label="💾 הורד קובץ Word מוכן",
-            data=bio,
-            file_name=f"{project_num}-{letter_num}.docx",
-            mime=ms_word_mime
-        )
-    except FileNotFoundError:
-        st.error("שגיאה: קובץ התבנית 'template.docx' לא נמצא באותה תיקייה.")
+        st.download_button("💾 הורד קובץ Word מוכן", bio, f"{project_num}-{letter_num}.docx", "application/octet-stream")
     except Exception as e:
         st.error(f"התרחשה שגיאה: {str(e)}")
 
-# חתימת קרדיט
 st.markdown("<div class='footer-credit'>נבנה ע\"י אביב קנבל, סטאר מהנדסים</div>", unsafe_allow_html=True)
