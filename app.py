@@ -122,29 +122,32 @@ if st.button("🚀 הפק קובץ Word"):
     try:
         doc = DocxTemplate("template.docx")
         
-        # בניית רשימת הערות כלליות (חלק 5)
+        # בניית רשימת הערות כלליות (חלק 5) במבנה אובייקט זהה לחלק 4
         general_remarks_list = []
         general_counter = 1
         if note1: 
-            general_remarks_list.append(f"5.{general_counter}. {txt1}")
+            general_remarks_list.append({'text': f"5.{general_counter}. {txt1}"})
             general_counter += 1
         if note2: 
-            general_remarks_list.append(f"5.{general_counter}. {txt2}")
+            general_remarks_list.append({'text': f"5.{general_counter}. {txt2}"})
             general_counter += 1
         if note3: 
-            general_remarks_list.append(f"5.{general_counter}. {txt3}")
+            general_remarks_list.append({'text': f"5.{general_counter}. {txt3}"})
             general_counter += 1
         if note4: 
-            general_remarks_list.append(f"5.{general_counter}. {txt4}")
+            general_remarks_list.append({'text': f"5.{general_counter}. {txt4}"})
             general_counter += 1
         if note5: 
-            general_remarks_list.append(f"5.{general_counter}. {txt5}")
+            general_remarks_list.append({'text': f"5.{general_counter}. {txt5}"})
             general_counter += 1
 
-        # בניית רשימת העתקים
-        cc_final_list = [line.strip() for line in cc_list.split('\n') if line.strip()]
+        # בניית רשימת העתקים במבנה אובייקט זהה לחלק 4
+        cc_final_list = []
+        for line in cc_list.split('\n'):
+            if line.strip():
+                cc_final_list.append({'text': line.strip()})
 
-        # עיבוד חלק 4 (לולאה)
+        # עיבוד חלק 4
         specific_remarks_list = []
         for idx, item in enumerate(st.session_state.dynamic_remarks):
             current_num = f"4.{idx + 1}"
@@ -157,7 +160,7 @@ if st.button("🚀 הפק קובץ Word"):
                     remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
                 specific_remarks_list.append(remark_data)
 
-        # יצירת ה-context המלא והסופי עם כל הרשימות בפנים
+        # יצירת ה-context
         context = {
             'report_date': report_date,
             'project_num': project_num,
