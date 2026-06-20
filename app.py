@@ -1,6 +1,7 @@
 import streamlit as st
 from docxtpl import DocxTemplate
 from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 from datetime import datetime
 
@@ -34,7 +35,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 1. הצגת הלוגו מוקטן (70% מהקודם - רוחב 245) וממורכז באמצע הדף
+# 1. הצגת הלוגו מוקטן (רוחב 245) וממורכז באמצע הדף
 try:
     col_space1, col_logo, col_space2 = st.columns([1.2, 2.6, 1.2])
     with col_logo:
@@ -85,19 +86,10 @@ st.write("---")
 extra_remarks = st.text_area("הערות וליקויים נוספים (כל הערה בשורה חדשה, ימוספרו בהמשך):", value="")
 
 # כפתור הפקה
-if st.button("🚀 הפק דוח Word"):
+if st.button("🚀 הפק קובץ Word"):
     try:
         # טעינת התבנית
         doc = DocxTemplate("template.docx")
-        
-        # הגדרת גופן ברירת מחדל למסמך (David, גודל 13.5) בצורה גלובלית כדי למנוע את קריסת הטקסט
-        try:
-            style = doc.styles['Normal']
-            font = style.font
-            font.name = 'David'
-            font.size = Pt(13.5)
-        except:
-            pass # למקרה של סגנון מסמך שונה, שלא יפריע להרצה
 
         # מנגנון יצירת סעיפים ממוספרים רצים (רק עבור מה שסומן ב-V)
         final_remarks_list = []
@@ -148,6 +140,25 @@ if st.button("🚀 הפק דוח Word"):
         
         # רינדור הנתונים לתוך הוורד
         doc.render(context)
+        
+        # לולאה שעוברת על כל הפסקאות והריצות במסמך ומעצבת אותן ל-David 13.5
+        for p in doc.paragraphs:
+            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT # יישור לימין של פסקאות שהוזרקו
+            for run in p.runs:
+                run.font.name = 'David'
+                run.font.size = Pt(13.5)
+                run.rtl = True # הגדרת כיווניות עברית לטקסט
+                
+        # מעבר גם על טבלאות (אם יש תגיות בתוך טבלה בתבנית שלך)
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for p in cell.paragraphs:
+                        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                        for run in p.runs:
+                            run.font.name = 'David'
+                            run.font.size = Pt(13.5)
+                            run.rtl = True
         
         # שמירה לזיכרון כדי לאפשר הורדה בדפדפן
         bio = io.BytesIO()
