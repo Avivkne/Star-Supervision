@@ -66,13 +66,13 @@ visit_date = st.text_input("תאריך הסיור", value=datetime.now().strftim
 inspection_subject = st.text_input("במהלך הסיור בוצע פיקוח ל...", value="האלמנט/אלמנטים נבדקים")
 
 st.header("👥 נוכחים בסיור")
-star_present = st.text_input("נוכח מטעם סטאר מהנדסים (הח\"מ)", value="הח"מ")
+star_present = st.text_input("נוכח מטעם סטאר מהנדסים (הח\"מ)", value="הח\"מ")
 inspector_name = st.text_input("שם המפקח באתר", value="מפקח נחמד")
 execution_team = st.text_input("נציגי הביצוע", value="אחמד ויוסי")
 author_initials = st.text_input("ראשי תיבות של כותב הדוח (עבור ה-Footer)", value="A.K")
 
 # חלק 4: הערות דינמיות וליקויים מהאתר (מתחיל מ-4.1)
-st.header("📸 הערות וליקויים")
+st.header("📸 הערות ספציפיות וליקויי סיור")
 st.write("כאן ניתן להוסיף הערות חופשיות ממוספרות (מ-4.1 ואילך) ולהעלות תמונה מתחת לכל אחת מהן:")
 
 # אתחול ה-session_state עבור רשימת ההערות הדינמיות אם לא קיים
@@ -104,7 +104,7 @@ if st.button("➕ הוסף הערה ותמונה נוספת"):
     st.rerun()
 
 # חלק 5: אזור הערות כלליות עם צ'קבוקסים (מתחיל מ-5.1)
-st.header("📝 הערות כלליות")
+st.header("📝 הערות וממצאים כלליים")
 st.write("בחר את המשפטים הרלוונטיים (הסעיפים ימוספרו אוטומטית החל מ-5.1):")
 
 note1 = st.checkbox("יש להסיר שאריות בטון ישן מתחתית ברזלי הזיון.")
