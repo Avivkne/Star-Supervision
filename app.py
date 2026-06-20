@@ -31,7 +31,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# הצגת הלוגו مוקטן וממורכז באמצע הדף
+# הצגת הלוגו מוקטן וממורכז באמצע הדף
 try:
     col_space1, col_logo, col_space2 = st.columns([1.2, 2.6, 1.2])
     with col_logo:
@@ -114,7 +114,7 @@ note5 = st.checkbox(txt5)
 
 # חלק העתקים פתוח לעריכה
 st.header("📨 העתקים")
-default_cc_text = f"1. בוריס בקלמן – סטאר מהנדסים\n2. מנהל פרויקט\n3. תיק פרויקט-{project_num}\n4. תיק כללי"
+default_cc_text = f"1. בוריס בקלמן/ישראל קנר – סטאר מהנדסים\n2. מנהל פרויקט\n3. תיק פרויקט-{project_num}\n4. תיק כללי"
 cc_list = st.text_area("רשימת תפוצה לעריכה:", value=default_cc_text, height=120)
 
 # כפתור הפקה
@@ -122,40 +122,9 @@ if st.button("🚀 הפק קובץ Word"):
     try:
         doc = DocxTemplate("template.docx")
         
-        context = {
-            'report_date': report_date,
-            'project_num': project_num,
-            'letter_num': letter_num,
-            'client_name': client_name,
-            'contact_person': contact_person,
-            'client_email': client_email,
-            'structure_name': structure_name,
-            'visit_date': visit_date,
-            'inspection_subject': inspection_subject,
-            'star_present': star_present,
-            'inspector_name': inspector_name,
-            'execution_team': execution_team,
-            'author_initials': author_initials
-        }
-
-        # עיבוד חלק 4 (לולאה)
-        specific_remarks_list = []
-        for idx, item in enumerate(st.session_state.dynamic_remarks):
-            current_num = f"4.{idx + 1}"
-            if item['text'].strip():
-                remark_data = {
-                    'text': f"{current_num}. {item['text'].strip()}",
-                    'image': None
-                }
-                if item['image'] is not None:
-                    remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
-                specific_remarks_list.append(remark_data)
-        context['specific_remarks_list'] = specific_remarks_list
-
-        # עיבוד חלק 5 (הפיכה ללולאה נפרדת)
+        # בניית רשימת הערות כלליות (חלק 5)
         general_remarks_list = []
         general_counter = 1
-        
         if note1: 
             general_remarks_list.append(f"5.{general_counter}. {txt1}")
             general_counter += 1
@@ -171,11 +140,42 @@ if st.button("🚀 הפק קובץ Word"):
         if note5: 
             general_remarks_list.append(f"5.{general_counter}. {txt5}")
             general_counter += 1
-        context['general_remarks_list'] = general_remarks_list
 
-        # עיבוד חלק העתקים (פירוק מערך טקסט ללולאת שורות נפרדות)
+        # בניית רשימת העתקים
         cc_final_list = [line.strip() for line in cc_list.split('\n') if line.strip()]
-        context['cc_final_list'] = cc_final_list
+
+        # עיבוד חלק 4 (לולאה)
+        specific_remarks_list = []
+        for idx, item in enumerate(st.session_state.dynamic_remarks):
+            current_num = f"4.{idx + 1}"
+            if item['text'].strip():
+                remark_data = {
+                    'text': f"{current_num}. {item['text'].strip()}",
+                    'image': None
+                }
+                if item['image'] is not None:
+                    remark_data['image'] = InlineImage(doc, item['image'], width=Inches(2))
+                specific_remarks_list.append(remark_data)
+
+        # יצירת ה-context המלא והסופי עם כל הרשימות בפנים
+        context = {
+            'report_date': report_date,
+            'project_num': project_num,
+            'letter_num': letter_num,
+            'client_name': client_name,
+            'contact_person': contact_person,
+            'client_email': client_email,
+            'structure_name': structure_name,
+            'visit_date': visit_date,
+            'inspection_subject': inspection_subject,
+            'star_present': star_present,
+            'inspector_name': inspector_name,
+            'execution_team': execution_team,
+            'author_initials': author_initials,
+            'specific_remarks_list': specific_remarks_list,
+            'general_remarks_list': general_remarks_list,
+            'cc_final_list': cc_final_list
+        }
 
         doc.render(context)
         
