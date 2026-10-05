@@ -102,9 +102,11 @@ def guarded(fn):
         with LOCKS[chat_id]:
             try:
                 fn(obj, chat_id)
-            except Exception:
+            except Exception as e:
                 log.exception("handler failed")
-                bot.send_message(chat_id, "⚠️ אירעה שגיאה בעיבוד. נסה שוב, ואם זה חוזר שלח /new והתחל מחדש.")
+                detail = f"{type(e).__name__}: {str(e)[:200]}"
+                bot.send_message(chat_id, "⚠️ אירעה שגיאה בעיבוד. נסה שוב, ואם זה חוזר שלח /new והתחל מחדש."
+                                 f"\n\nפרטים טכניים: {detail}")
     return wrapper
 
 
@@ -150,24 +152,43 @@ def _clean_list(value):
     return out
 
 
+def _parse_json(content):
+    """מפענח JSON גם אם המודל עטף אותו בטקסט או בגדרות ```."""
+    try:
+        return json.loads(content)
+    except (ValueError, TypeError):
+        pass
+    start, end = (content or "").find("{"), (content or "").rfind("}")
+    if start != -1 and end > start:
+        try:
+            return json.loads(content[start:end + 1])
+        except ValueError:
+            pass
+    log.warning("could not parse model output: %r", (content or "")[:300])
+    return {}
+
+
 def extract(text, st):
     prompt = (SYSTEM_PROMPT
               .replace("__KEYS__", ", ".join(FIELDS))
               .replace("__TODAY__", date.today().strftime("%d/%m/%Y")))
-    resp = client.chat.completions.create(
-        model=OPENAI_MODEL,
-        temperature=0.2,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": json.dumps({"known_fields": st["fields"], "input": text},
-                                                   ensure_ascii=False)},
-        ],
-    )
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": json.dumps({"known_fields": st["fields"], "input": text},
+                                               ensure_ascii=False)},
+    ]
     try:
-        data = json.loads(resp.choices[0].message.content)
-    except (ValueError, TypeError):
-        data = {}
+        resp = client.chat.completions.create(
+            model=OPENAI_MODEL, temperature=0.2,
+            response_format={"type": "json_object"}, messages=messages)
+        content = resp.choices[0].message.content
+    except Exception as e:
+        # חלק מהספקים/מודלים נכשלים במצב JSON קשיח: מנסים שוב בלי, ומחלצים JSON מהטקסט
+        log.warning("json mode failed (%s), retrying without response_format", e)
+        resp = client.chat.completions.create(
+            model=OPENAI_MODEL, temperature=0.2, messages=messages)
+        content = resp.choices[0].message.content or ""
+    data = _parse_json(content)
     fields = {}
     for k, v in (data.get("fields") or {}).items():
         if k in FIELDS and v not in (None, "", "null"):
