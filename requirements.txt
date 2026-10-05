@@ -1,0 +1,4 @@
+pyTelegramBotAPI>=4.20
+openai>=1.40
+docxtpl>=0.18
+Pillow>=10.3
