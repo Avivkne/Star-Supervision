@@ -454,7 +454,20 @@ def start_health_server():
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
 
+def check_models():
+    """מדפיס ללוג אילו מודלים זמינים בחשבון, ומזהיר אם המודל שהוגדר לא קיים."""
+    try:
+        ids = sorted(m.id for m in client.models.list().data)
+        log.info("available models: %s", ", ".join(ids))
+        for name in (OPENAI_MODEL, TRANSCRIBE_MODEL):
+            if name not in ids:
+                log.warning("MODEL NOT FOUND: %s. בחר שם מהרשימה למעלה ועדכן ב-Environment", name)
+    except Exception as e:
+        log.warning("could not list models: %s", e)
+
+
 if __name__ == "__main__":
+    check_models()
     start_health_server()
     log.info("bot started")
     # בלי skip_pending: הוא קורס על 409 בהתנגשות זמנית; infinity_polling מנסה שוב לבד
