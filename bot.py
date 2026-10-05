@@ -38,6 +38,17 @@ ALLOWED = {int(x) for x in os.getenv("ALLOWED_USER_IDS", "").split(",") if x.str
 DEFAULT_CC = [x.strip() for x in os.getenv("DEFAULT_CC", "").split("|") if x.strip()]
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=True, num_threads=8)
+
+RLM = "\u200f"  # סימן כיוון ימין-לשמאל: גורם לטלגרם ליישר כל שורה לימין
+
+
+def rtl(text):
+    """מוסיף RLM בתחילת כל שורה, כך שגם שורות שמתחילות באנגלית/מספר/אימוג'י מיושרות לימין."""
+    return "\n".join((RLM + line) if line.strip() else line for line in str(text).split("\n"))
+
+
+def say(chat_id, text, **kwargs):
+    return bot.send_message(chat_id, rtl(text), **kwargs)
 # ברירת מחדל: OpenAI. לשימוש בספק תואם (למשל Groq בחינם) מגדירים LLM_BASE_URL ו-LLM_API_KEY
 client = OpenAI(
     api_key=os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY"),
@@ -105,7 +116,7 @@ def guarded(fn):
             except Exception as e:
                 log.exception("handler failed")
                 detail = f"{type(e).__name__}: {str(e)[:200]}"
-                bot.send_message(chat_id, "⚠️ אירעה שגיאה בעיבוד. נסה שוב, ואם זה חוזר שלח /new והתחל מחדש."
+                say(chat_id, "⚠️ אירעה שגיאה בעיבוד. נסה שוב, ואם זה חוזר שלח /new והתחל מחדש."
                                  f"\n\nפרטים טכניים: {detail}")
     return wrapper
 
@@ -189,6 +200,7 @@ def extract(text, st):
             model=OPENAI_MODEL, temperature=0.2, messages=messages)
         content = resp.choices[0].message.content or ""
     data = _parse_json(content)
+    log.info("extract input=%r -> %s", text[:200], json.dumps(data, ensure_ascii=False)[:600])
     fields = {}
     for k, v in (data.get("fields") or {}).items():
         if k in FIELDS and v not in (None, "", "null"):
@@ -238,9 +250,12 @@ def start_finish(chat_id, st):
         else:
             st["specific"].append({"text": "(ללא תיאור)", "images": list(st["pending"])})
         st["pending"] = []
-    if not st["specific"] and not st["general"]:
-        bot.send_message(chat_id, "עדיין לא התקבלו הערות. שלח הקלטה, טקסט או תמונות ואז לחץ סיום.")
+    if not st["specific"] and not st["general"] and not st["fields"]:
+        say(chat_id, "עדיין לא התקבל שום תוכן. שלח הקלטה, טקסט או תמונות ואז לחץ סיום.")
         return
+    if not st["specific"] and not st["general"]:
+        say(chat_id, "שים לב: עדיין אין הערות בדוח, רק פרטי פרויקט. "
+                                  "אפשר להמשיך לסיכום, או להוסיף הערות קודם.")
     ask_next(chat_id, st)
 
 
@@ -249,13 +264,13 @@ def ask_next(chat_id, st):
     if missing:
         st["stage"], st["asking"] = "asking", missing[0]
         label = FIELDS[missing[0]][0]
-        bot.send_message(chat_id, f"חסר פרט: {label}.\nאפשר לענות בהקלטה או בטקסט.")
+        say(chat_id, f"חסר פרט: {label}.\nאפשר לענות בהקלטה או בטקסט.")
         return
     st["stage"], st["asking"] = "confirm", None
     kb = types.InlineKeyboardMarkup()
     kb.row(types.InlineKeyboardButton("📄 הפק דוח", callback_data="gen"),
            types.InlineKeyboardButton("➕ המשך להוסיף", callback_data="back"))
-    bot.send_message(chat_id, build_summary(st) +
+    say(chat_id, build_summary(st) +
                      "\n\nלתיקון פרט אפשר פשוט לכתוב/להקליט, למשל: \"שם הלקוח הוא ...\"", reply_markup=kb)
 
 
@@ -275,7 +290,7 @@ def handle_content(chat_id, text, images=None):
         for k, v in data["fields"].items():  # אם נאמרו גם פרטים אחרים
             if k != key and not st["fields"].get(k):
                 st["fields"][k] = v
-        bot.send_message(chat_id, f"✔️ {label}: {value}")
+        say(chat_id, f"✔️ {label}: {value}")
         ask_next(chat_id, st)
         return
 
@@ -311,11 +326,11 @@ def handle_content(chat_id, text, images=None):
     msg = "✅ נקלט:\n" + "\n".join(parts)
     if came_from_confirm:
         msg += "\n\nעודכן. לחץ \"סיום והפקת דוח\" כדי לחזור לסיכום."
-    bot.send_message(chat_id, msg, reply_markup=main_keyboard())
+    say(chat_id, msg, reply_markup=main_keyboard())
 
 
 def generate_and_send(chat_id, st):
-    bot.send_message(chat_id, "⏳ מפיק את הדוח...")
+    say(chat_id, "⏳ מפיק את הדוח...")
     bot.send_chat_action(chat_id, "upload_document")
     cc = DEFAULT_CC + [c for c in st["cc"] if c not in DEFAULT_CC]
     path = build_report(st["fields"], st["specific"], st["general"], cc, st["dir"])
@@ -323,37 +338,78 @@ def generate_and_send(chat_id, st):
                    f"{st['fields'].get('project_num', 'ללא')}_{st['fields'].get('visit_date', '')}")
     with open(path, "rb") as f:
         bot.send_document(chat_id, f, visible_file_name=f"דוח_פיקוח_{safe}.docx",
-                          caption="הדוח מוכן ✅ לדוח חדש פשוט התחל לשלוח הודעות.")
+                          caption=rtl("הדוח מוכן ✅ לדוח חדש פשוט התחל לשלוח הודעות."))
     reset_state(chat_id)
 
 
 # ------------------------------------------------------------------ handlers
-@bot.message_handler(commands=["start", "help"])
+HINTS = {
+    "visit_date": "תאריך הביקור (אפשר לומר \"היום\")",
+    "project_num": "מספר הפרויקט",
+    "letter_num": "מספר המכתב",
+    "client_name": "שם הלקוח",
+    "contact_person": "איש הקשר אצל הלקוח",
+    "client_email": "אימייל הלקוח (עדיף להקליד בטקסט)",
+    "structure_name": "שם/סימון המבנה, למשל: ב'",
+    "inspection_subject": "נושא הפיקוח, למשל: יציקת תקרת קומה 2",
+    "inspector_name": "שם המפקח (שם פרטי ומשפחה)",
+    "execution_team": "נציגי הביצוע שנכחו בסיור",
+    "star_present": "נציגי סטאר מהנדסים שנכחו",
+    "work_status": "מצב העבודה בקצרה (משפט-שניים)",
+}
+
+
+def checklist_text():
+    lines = ["📝 בתחילת הדוח, הקלט בבקשה את הפרטים הבאים (בכל סדר, בהקלטה אחת או בכמה):", ""]
+    n = 0
+    for key, (label, required) in FIELDS.items():
+        if key == "author_initials":
+            continue
+        n += 1
+        lines.append(f"{n}. {HINTS.get(key, label)} ({'חובה' if required else 'אופציונלי'})")
+    lines += [
+        "",
+        "ראשי התיבות באנגלית (למשל A.K) ותאריך הדוח נוצרים אוטומטית.",
+        "",
+        "אחר כך שלח את ההערות מהשטח:",
+        "• הקלטה או טקסט על כל ממצא: איפה, מה נמצא, ומה נדרש",
+        "• תמונה עם כיתוב = הערה עם תמונה",
+        "• תמונה בלי כיתוב תשויך להקלטה או לטקסט הבא",
+        "",
+        "בסוף לחץ על \"✅ סיום והפקת דוח\".",
+        "",
+        "💡 דוגמה להקלטת פתיחה:",
+        "\"ביקור היום, פרויקט 123, מכתב 45, לקוח חברת כהן בע״מ, איש קשר דני לוי, "
+        "מבנה ב', פיקוח על יציקת תקרת קומה 2. המפקח אביב קנבל. נציגי הביצוע: משה, מנהל עבודה. "
+        "מסטאר מהנדסים נכח רון. מצב העבודה: היציקה הושלמה והתבניות הוסרו.\"",
+    ]
+    return "\n".join(lines)
+
+
+def send_checklist(chat_id):
+    say(chat_id, checklist_text(), reply_markup=main_keyboard())
+
+
+@bot.message_handler(commands=["start", "help", "checklist"])
 @guarded
 def cmd_start(m, chat_id):
     get_state(chat_id)
-    bot.send_message(
-        chat_id,
-        "שלום! אני מפיק דוחות פיקוח עליון.\n\n"
-        "שלח לי מהשטח הקלטות, טקסט ותמונות, בכל סדר:\n"
-        "• תמונה עם כיתוב = הערה עם תמונה\n"
-        "• תמונה בלי כיתוב = תשויך להקלטה/טקסט הבא\n"
-        "• אפשר לומר פרטי פרויקט (לקוח, מבנה, תאריך ביקור...) באותה הקלטה\n\n"
-        "בסוף לחץ \"סיום והפקת דוח\". אשאל על מה שחסר ואפיק קובץ Word.",
-        reply_markup=main_keyboard())
+    say(chat_id, "שלום! אני מפיק דוחות פיקוח עליון מהשטח, מהקלטות, טקסט ותמונות.")
+    send_checklist(chat_id)
 
 
 @bot.message_handler(commands=["new", "cancel"])
 @guarded
 def cmd_new(m, chat_id):
     reset_state(chat_id)
-    bot.send_message(chat_id, "🗑 התחלנו דוח חדש.", reply_markup=main_keyboard())
+    say(chat_id, "🗑 התחלנו דוח חדש.", reply_markup=main_keyboard())
+    send_checklist(chat_id)
 
 
 @bot.message_handler(commands=["status"])
 @guarded
 def cmd_status(m, chat_id):
-    bot.send_message(chat_id, build_summary(get_state(chat_id)))
+    say(chat_id, build_summary(get_state(chat_id)))
 
 
 @bot.message_handler(content_types=["text"])
@@ -363,10 +419,11 @@ def on_text(m, chat_id):
     if text == BTN_DONE:
         start_finish(chat_id, get_state(chat_id))
     elif text == BTN_STATUS:
-        bot.send_message(chat_id, build_summary(get_state(chat_id)))
+        say(chat_id, build_summary(get_state(chat_id)))
     elif text == BTN_NEW:
         reset_state(chat_id)
-        bot.send_message(chat_id, "🗑 התחלנו דוח חדש.", reply_markup=main_keyboard())
+        say(chat_id, "🗑 התחלנו דוח חדש.", reply_markup=main_keyboard())
+        send_checklist(chat_id)
     elif text:
         handle_content(chat_id, text)
 
@@ -384,9 +441,9 @@ def on_voice(m, chat_id):
         ext = "ogg" if ext == "oga" else ext
     text = transcribe(data, f"audio.{ext}")
     if not text:
-        bot.send_message(chat_id, "לא הצלחתי לשמוע תוכן בהקלטה. נסה שוב.")
+        say(chat_id, "לא הצלחתי לשמוע תוכן בהקלטה. נסה שוב.")
         return
-    bot.send_message(chat_id, f"🎤 תומלל:\n{text}")
+    say(chat_id, f"🎤 תומלל:\n{text}")
     handle_content(chat_id, text)
 
 
@@ -395,7 +452,7 @@ def on_voice(m, chat_id):
 def on_photo(m, chat_id):
     if m.content_type == "document":
         if not (m.document.mime_type or "").startswith("image/"):
-            bot.send_message(chat_id, "קבצים שאינם תמונה לא נתמכים. שלח תמונה (JPG/PNG).")
+            say(chat_id, "קבצים שאינם תמונה לא נתמכים. שלח תמונה (JPG/PNG).")
             return
         file_id = m.document.file_id
     else:
@@ -417,7 +474,7 @@ def on_photo(m, chat_id):
     group = m.media_group_id
     if group is None or group != st["last_ack_group"]:  # לא להציף תגובות באלבום
         st["last_ack_group"] = group
-        bot.send_message(chat_id, "📷 התמונה נשמרה. שלח תיאור (הקלטה/טקסט) והיא תשויך אליו.")
+        say(chat_id, "📷 התמונה נשמרה. שלח תיאור (הקלטה/טקסט) והיא תשויך אליו.")
 
 
 @bot.callback_query_handler(func=lambda c: c.data in ("gen", "back"))
@@ -431,7 +488,7 @@ def on_callback(c, chat_id):
         generate_and_send(chat_id, st)
     else:
         st["stage"] = "collecting"
-        bot.send_message(chat_id, "ממשיכים. שלח עוד הערות או תמונות.", reply_markup=main_keyboard())
+        say(chat_id, "ממשיכים. שלח עוד הערות או תמונות.", reply_markup=main_keyboard())
 
 
 # ------------------------------------------------------------------ Render
