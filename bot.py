@@ -436,4 +436,5 @@ def start_health_server():
 if __name__ == "__main__":
     start_health_server()
     log.info("bot started")
-    bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
+    # בלי skip_pending: הוא קורס על 409 בהתנגשות זמנית; infinity_polling מנסה שוב לבד
+    bot.infinity_polling(timeout=30, long_polling_timeout=30)
