@@ -454,16 +454,34 @@ def start_health_server():
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
 
+_PREFERRED = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b",
+              "llama-3.1-8b-instant", "qwen/qwen3-32b"]
+_NOT_CHAT = ("whisper", "guard", "tts", "orpheus", "compound", "embed", "safeguard")
+
+
 def check_models():
-    """מדפיס ללוג אילו מודלים זמינים בחשבון, ומזהיר אם המודל שהוגדר לא קיים."""
+    """
+    מדפיס ללוג אילו מודלים זמינים בחשבון. אם מודל הטקסט שהוגדר לא קיים,
+    בוחר אוטומטית מודל טקסט זמין (לפי סדר העדפה, ואחרת הראשון הזמין).
+    """
+    global OPENAI_MODEL
     try:
         ids = sorted(m.id for m in client.models.list().data)
-        log.info("available models: %s", ", ".join(ids))
-        for name in (OPENAI_MODEL, TRANSCRIBE_MODEL):
-            if name not in ids:
-                log.warning("MODEL NOT FOUND: %s. בחר שם מהרשימה למעלה ועדכן ב-Environment", name)
     except Exception as e:
         log.warning("could not list models: %s", e)
+        return
+    log.info("available models: %s", ", ".join(ids))
+    if TRANSCRIBE_MODEL not in ids:
+        log.warning("TRANSCRIBE MODEL NOT FOUND: %s", TRANSCRIBE_MODEL)
+    if OPENAI_MODEL in ids:
+        return
+    chat = [i for i in ids if not any(x in i.lower() for x in _NOT_CHAT)]
+    pick = next((m for m in _PREFERRED if m in chat), chat[0] if chat else None)
+    if pick:
+        log.warning("MODEL NOT FOUND: %s -> using %s instead", OPENAI_MODEL, pick)
+        OPENAI_MODEL = pick
+    else:
+        log.error("no usable text model found in the account")
 
 
 if __name__ == "__main__":
